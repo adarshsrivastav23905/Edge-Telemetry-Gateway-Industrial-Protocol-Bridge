@@ -1,0 +1,102 @@
+# =============================================================================
+#  docker-compose.yml — Edge Telemetry Gateway & Industrial Protocol Bridge
+# =============================================================================
+#  Orchestrates:
+#    1. Mosquitto MQTT Broker (port 1883)
+#    2. Modbus TCP Slave Meter Simulator (port 5020)
+#    3. Python Edge Telemetry Gateway (bridges Modbus -> MQTT)
+#    4. C++ Edge Telemetry Gateway (profile: cpp)
+#    5. CLI Monitor Subscriber (tails telemetry/#)
+#
+#  Usage:
+#    docker compose up --build                    # Runs Python stack + Monitor
+#    docker compose --profile cpp up --build      # Runs C++ gateway stack
+# =============================================================================
+
+version: "3.8"
+
+networks:
+  iot-bridge-net:
+    driver: bridge
+
+services:
+  # ---------------------------------------------------------------------------
+  # MQTT Broker (Eclipse Mosquitto)
+  # ---------------------------------------------------------------------------
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: iot_mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    networks:
+      - iot-bridge-net
+
+  # ---------------------------------------------------------------------------
+  # Modbus TCP Industrial Smart Meter Simulator
+  # ---------------------------------------------------------------------------
+  simulator:
+    build:
+      context: ./simulator
+      dockerfile: Dockerfile
+    container_name: iot_modbus_simulator
+    restart: unless-stopped
+    ports:
+      - "5020:5020"
+    networks:
+      - iot-bridge-net
+
+  # ---------------------------------------------------------------------------
+  # Edge Telemetry Gateway (Python)
+  # ---------------------------------------------------------------------------
+  gateway_python:
+    build:
+      context: ./gateway_python
+      dockerfile: Dockerfile
+    container_name: iot_gateway_python
+    restart: unless-stopped
+    depends_on:
+      - mosquitto
+      - simulator
+    volumes:
+      - ./config:/app/config:ro
+    command: ["--config", "/app/config/gateway_config.docker.yaml"]
+    networks:
+      - iot-bridge-net
+
+  # ---------------------------------------------------------------------------
+  # Edge Telemetry Gateway (C++ High-Performance Path)
+  # ---------------------------------------------------------------------------
+  gateway_cpp:
+    build:
+      context: ./gateway_cpp
+      dockerfile: Dockerfile
+    container_name: iot_gateway_cpp
+    restart: unless-stopped
+    profiles:
+      - cpp
+    depends_on:
+      - mosquitto
+      - simulator
+    volumes:
+      - ./config:/app/config:ro
+    command: ["/app/config/gateway_config.docker.json"]
+    networks:
+      - iot-bridge-net
+
+  # ---------------------------------------------------------------------------
+  # Live Telemetry Monitor Subscriber
+  # ---------------------------------------------------------------------------
+  monitor:
+    build:
+      context: ./monitor
+      dockerfile: Dockerfile
+    container_name: iot_telemetry_monitor
+    restart: unless-stopped
+    depends_on:
+      - mosquitto
+    command: ["--broker", "mosquitto", "--port", "1883", "--topic", "telemetry/#"]
+    networks:
+      - iot-bridge-net

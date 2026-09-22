@@ -1,0 +1,4 @@
+# Edge Telemetry Gateway (Python) — Dependencies
+pymodbus>=3.6.0,<3.8
+paho-mqtt>=2.0.0
+PyYAML>=6.0

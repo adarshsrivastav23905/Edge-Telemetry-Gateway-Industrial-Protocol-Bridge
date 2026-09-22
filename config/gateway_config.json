@@ -1,0 +1,110 @@
+{
+    "devices": [
+        {
+            "id": "meter_01",
+            "host": "localhost",
+            "port": 5020,
+            "unit_id": 1,
+            "poll_interval_ms": 500,
+            "timeout_ms": 1000,
+            "retries": 3
+        }
+    ],
+    "register_maps": {
+        "meter_01": [
+            {
+                "tag": "voltage",
+                "address": 0,
+                "count": 2,
+                "data_type": "float32",
+                "word_order": "AB",
+                "scale": 1.0,
+                "offset": 0.0,
+                "unit": "V"
+            },
+            {
+                "tag": "current",
+                "address": 2,
+                "count": 1,
+                "data_type": "uint16",
+                "word_order": "AB",
+                "scale": 0.01,
+                "offset": 0.0,
+                "unit": "A"
+            },
+            {
+                "tag": "temperature",
+                "address": 3,
+                "count": 1,
+                "data_type": "int16",
+                "word_order": "AB",
+                "scale": 0.1,
+                "offset": 0.0,
+                "unit": "°C"
+            },
+            {
+                "tag": "power_factor",
+                "address": 4,
+                "count": 1,
+                "data_type": "uint16",
+                "word_order": "AB",
+                "scale": 0.001,
+                "offset": 0.0,
+                "unit": ""
+            },
+            {
+                "tag": "frequency",
+                "address": 5,
+                "count": 1,
+                "data_type": "uint16",
+                "word_order": "AB",
+                "scale": 0.01,
+                "offset": 0.0,
+                "unit": "Hz"
+            }
+        ]
+    },
+    "thresholds": {
+        "voltage": {
+            "warning": 245.0,
+            "critical": 253.0,
+            "hysteresis": 5.0,
+            "debounce_count": 3
+        },
+        "current": {
+            "warning": 20.0,
+            "critical": 25.0,
+            "hysteresis": 2.0,
+            "debounce_count": 3
+        },
+        "temperature": {
+            "warning": 60.0,
+            "critical": 75.0,
+            "hysteresis": 5.0,
+            "debounce_count": 5
+        }
+    },
+    "mqtt": {
+        "broker_host": "localhost",
+        "broker_port": 1883,
+        "client_id": "edge_gateway_01",
+        "keepalive_s": 60,
+        "base_topic": "telemetry",
+        "data_qos": 0,
+        "alert_qos": 1,
+        "lwt_topic": "telemetry/edge_gateway_01/status",
+        "lwt_payload": "offline",
+        "lwt_qos": 1,
+        "lwt_retain": true
+    },
+    "reconnect": {
+        "initial_delay_ms": 1000,
+        "max_delay_ms": 60000,
+        "jitter_ms": 500
+    },
+    "queue": {
+        "max_size": 1000,
+        "overflow_policy": "drop_oldest"
+    },
+    "log_level": "INFO"
+}

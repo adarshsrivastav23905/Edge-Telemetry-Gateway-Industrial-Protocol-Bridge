@@ -1,0 +1,134 @@
+# ============================================================================
+# Edge Telemetry Gateway — Master Configuration
+# ============================================================================
+# This file defines every runtime parameter: devices, register maps,
+# thresholds, MQTT broker settings, and reconnect behaviour.
+#
+# A data-driven register map means adding a new device type is a config
+# change, not a code change — exactly how commercial gateways work.
+# ============================================================================
+
+# ---------------------------------------------------------------------------
+# Device definitions — each entry is a Modbus TCP slave to poll
+# ---------------------------------------------------------------------------
+devices:
+  - id: "meter_01"
+    host: "localhost"            # or "simulator" inside Docker
+    port: 5020
+    unit_id: 1
+    poll_interval_ms: 500       # 500 ms = typical monitoring-class telemetry
+    timeout_ms: 1000
+    retries: 3
+
+# ---------------------------------------------------------------------------
+# Register map — one block per device id
+# Supported data_type: uint16, int16, float32
+# word_order: AB = big-endian (high word first), BA = little-endian (low first)
+# ---------------------------------------------------------------------------
+register_maps:
+  meter_01:
+    - tag: "voltage"
+      address: 0
+      count: 2                  # float32 spans two 16-bit registers
+      data_type: "float32"
+      word_order: "AB"          # high word at address 0
+      scale: 1.0
+      offset: 0.0
+      unit: "V"
+
+    - tag: "current"
+      address: 2
+      count: 1
+      data_type: "uint16"
+      word_order: "AB"
+      scale: 0.01               # raw 1500 → 15.00 A
+      offset: 0.0
+      unit: "A"
+
+    - tag: "temperature"
+      address: 3
+      count: 1
+      data_type: "int16"
+      word_order: "AB"
+      scale: 0.1                # raw 453 → 45.3 °C
+      offset: 0.0
+      unit: "°C"
+
+    - tag: "power_factor"
+      address: 4
+      count: 1
+      data_type: "uint16"
+      word_order: "AB"
+      scale: 0.001              # raw 950 → 0.950
+      offset: 0.0
+      unit: ""
+
+    - tag: "frequency"
+      address: 5
+      count: 1
+      data_type: "uint16"
+      word_order: "AB"
+      scale: 0.01               # raw 5000 → 50.00 Hz
+      offset: 0.0
+      unit: "Hz"
+
+# ---------------------------------------------------------------------------
+# Threshold / alert definitions per tag
+# Alerts fire when value crosses the threshold for debounce_count
+# consecutive samples and clear when it drops below (threshold - hysteresis).
+# ---------------------------------------------------------------------------
+thresholds:
+  voltage:
+    warning: 245.0
+    critical: 253.0
+    hysteresis: 5.0             # clear warning at 240 V, critical at 248 V
+    debounce_count: 3
+  current:
+    warning: 20.0
+    critical: 25.0
+    hysteresis: 2.0
+    debounce_count: 3
+  temperature:
+    warning: 60.0
+    critical: 75.0
+    hysteresis: 5.0
+    debounce_count: 5
+
+# ---------------------------------------------------------------------------
+# MQTT broker settings
+# ---------------------------------------------------------------------------
+mqtt:
+  broker_host: "localhost"      # or "mosquitto" inside Docker
+  broker_port: 1883
+  client_id: "edge_gateway_01"
+  keepalive_s: 60
+  base_topic: "telemetry"
+  data_qos: 0                  # normal readings — high volume, loss OK
+  alert_qos: 1                 # threshold breaches — must deliver
+  lwt_topic: "telemetry/edge_gateway_01/status"
+  lwt_payload: "offline"
+  lwt_qos: 1
+  lwt_retain: true
+
+# ---------------------------------------------------------------------------
+# Reconnect backoff for both Modbus and MQTT connections
+# delay = min(initial_ms * 2^attempt + random(0, jitter_ms), max_ms)
+# ---------------------------------------------------------------------------
+reconnect:
+  initial_delay_ms: 1000
+  max_delay_ms: 60000
+  jitter_ms: 500
+
+# ---------------------------------------------------------------------------
+# Dispatch queue
+# ---------------------------------------------------------------------------
+queue:
+  max_size: 1000                # bounded queue prevents memory blowup
+  overflow_policy: "drop_oldest" # alternatives: drop_newest, block
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+logging:
+  level: "INFO"                 # DEBUG, INFO, WARNING, ERROR
+  format: "structured"          # "structured" (JSON lines) or "text"
