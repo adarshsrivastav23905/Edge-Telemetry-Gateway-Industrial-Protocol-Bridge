@@ -7,7 +7,7 @@
 [![Protocol](https://img.shields.io/badge/Protocol-Modbus%20TCP%20%E2%86%92%20MQTT-orange.svg)](#protocol-translation)
 
 > An industrial-grade Edge Gateway that polls smart meters and RTUs over **Modbus TCP**, decodes raw binary holding registers into engineering units, runs local threshold evaluation with hysteresis anti-flapping, and publishes structured JSON telemetry to an **MQTT broker** with Last Will and Testament (LWT) and exponential reconnect backoff.
-
+   
 ---
 
 ## 🏭 Industry Context
