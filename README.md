@@ -11,7 +11,7 @@
 ---
 
 ## 🏭 Industry Context
-
+     
 Protocol conversion between field devices and IT/cloud systems is the foundation of substation automation, smart grids, and Industry 4.0. Commercial gateways from vendors such as **Kalkitech (SYNC series)**, **Schneider Electric (EcoStruxure)**, **Siemens (SICAM / Ruggedcom)**, **ABB**, **GE Grid**, and **Moxa** operate on this exact paradigm: translating deterministic fieldbuses (Modbus TCP/RTU, IEC 60870-5-104, DNP3) into asynchronous publish-subscribe telemetry (MQTT, Sparkplug B, AMQP).
 
 ---   
